@@ -32,6 +32,7 @@ public:
     virtual void setSaturation(double satVal) = 0;
 	virtual void setOutputWidth(int w) = 0;
 	virtual void setOutputHeight(int h) = 0;
+	virtual void setSharpen(double amount) = 0;
 };
 
 

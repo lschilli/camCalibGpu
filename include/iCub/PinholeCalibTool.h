@@ -62,6 +62,7 @@ class PinholeCalibTool : public ICalibTool
 	double currSat;
 	int outputWidth;
 	int outputHeight;
+	double sharpenVal;
 	
 
 public:
@@ -112,6 +113,7 @@ public:
 	void setSaturation(double satVal);
 	void setOutputWidth(int w);
 	void setOutputHeight(int h);
+	void setSharpen(double amount);
 };
 
 

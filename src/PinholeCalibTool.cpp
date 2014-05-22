@@ -217,9 +217,15 @@ void PinholeCalibTool::apply(const Image& in, ImageOf<PixelRgb> & out){
 		cv::gpu::merge(gpumatvec, gpuundisttmp);
 		cv::gpu::cvtColor(gpuundisttmp, gpumatvec[1], CV_HSV2BGR);
 	}
-	out.resize(gpumatvec[1].size().width, gpumatvec[1].size().height);
+	int ind = 1;
+	if (sharpenVal != 0) {
+		cv::gpu::GaussianBlur(gpumatvec[1], gpumatvec[2], cv::Size(5, 5), 5);
+		cv::gpu::addWeighted(gpumatvec[1], 1.0 + sharpenVal, gpumatvec[2], -sharpenVal, 0, gpumatvec[2]);
+		ind = 2;
+	}
+	out.resize(gpumatvec[ind].size().width, gpumatvec[ind].size().height);
 	cv::Mat outmat((IplImage*)out.getIplImage(), false);
-	gpumatvec[1].download(outmat);
+	gpumatvec[ind].download(outmat);
 
 //    cvRemap( in.getIplImage(), out.getIplImage(), _mapUndistortX, _mapUndistortY);
 
@@ -247,4 +253,8 @@ void PinholeCalibTool::setOutputWidth(int w) {
 
 void PinholeCalibTool::setOutputHeight(int h) {
 	outputHeight = h;
+}
+
+void PinholeCalibTool::setSharpen(double amount) {
+	sharpenVal = amount;
 }

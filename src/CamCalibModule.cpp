@@ -130,9 +130,11 @@ bool CamCalibModule::configure(yarp::os::ResourceFinder &rf){
     {
         cout << "====> warning: port " << getName("/conf") << " already in use" << endl;    
     }
-    _calibTool->setSaturation(rf.check("saturation",Value(1.0)).asDouble());
-	_calibTool->setOutputWidth(rf.check("outwidth",Value(0)).asInt());
-	_calibTool->setOutputHeight(rf.check("outheight",Value(0)).asInt());
+    _calibTool->setSaturation(rf.check("saturation", Value(1.0)).asDouble());
+	_calibTool->setOutputWidth(rf.check("outwidth", Value(0)).asInt());
+	_calibTool->setOutputHeight(rf.check("outheight", Value(0)).asInt());
+	_calibTool->setSharpen(rf.check("sharpen", Value(0)).asDouble());
+	
     _prtImgIn.open(getName("/in"));
     _prtImgIn.setPointers(&_prtImgOut,_calibTool);
     _prtImgIn.setVerbose(rf.check("verbose"));
