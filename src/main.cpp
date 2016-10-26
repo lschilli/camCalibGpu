@@ -5,7 +5,7 @@
  * CopyPolicy: Released under the terms of the GNU GPL v2.0.
  * 
  * Modified version to outsource debayering, optional saturation change and
- * optional debayering to the GPU using cv::gpu (Lars Schillingmann)
+ * optional debayering to the GPU using OpenCV (Lars Schillingmann)
  */
 
  /**

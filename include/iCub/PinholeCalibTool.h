@@ -16,8 +16,14 @@
 #include <math.h>
 
 // opencv
-#include <cv.h>
-#include <opencv2/gpu/gpu.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/version.hpp>
+#if CV_MAJOR_VERSION == 2
+    #include <opencv2/gpu/gpu.hpp>
+#elif CV_MAJOR_VERSION == 3
+    #include "opencv2/cudaarithm.hpp"
+    #include "opencv2/cudafilters.hpp"
+#endif
 
 // yarp
 //#include <yarp/sig/Image.h>
@@ -45,10 +51,18 @@ class PinholeCalibTool : public ICalibTool
 
     IplImage        *_mapUndistortX;
     IplImage        *_mapUndistortY;
+
+#if CV_MAJOR_VERSION == 2
 	cv::gpu::GpuMat gpuundistx;
 	cv::gpu::GpuMat gpuundisty;
     cv::gpu::GpuMat gpuundisttmp;
 	std::vector<cv::gpu::GpuMat> gpumatvec;
+#elif CV_MAJOR_VERSION == 3
+    cv::cuda::GpuMat gpuundistx;
+    cv::cuda::GpuMat gpuundisty;
+    cv::cuda::GpuMat gpuundisttmp;
+    std::vector<cv::cuda::GpuMat> gpumatvec;
+#endif
 
     bool _needInit;
 
@@ -107,9 +121,9 @@ public:
     * If necessary the output image is resized to match the size of the 
     * input image.
     */
-    void apply(const yarp::sig::Image& in,
-               yarp::sig::ImageOf<yarp::sig::PixelRgb> & out);    
-    
+    void apply(const yarp::sig::ImageOf<yarp::sig::PixelRgb> & in,
+               yarp::sig::ImageOf<yarp::sig::PixelRgb> & out);
+
 	void setSaturation(double satVal);
 	void setOutputWidth(int w);
 	void setOutputHeight(int h);

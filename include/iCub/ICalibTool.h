@@ -26,7 +26,7 @@ public:
     virtual bool close () = 0;
     virtual bool configure (yarp::os::Searchable &config) = 0;
 
-    virtual void apply(const yarp::sig::Image& in,
+    virtual void apply(const yarp::sig::ImageOf<yarp::sig::PixelRgb> & in,
                        yarp::sig::ImageOf<yarp::sig::PixelRgb> & out) = 0;
 
     virtual void setSaturation(double satVal) = 0;
