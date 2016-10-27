@@ -5,7 +5,7 @@
  * CopyPolicy: Released under the terms of the GNU GPL v2.0.
  * 
  * Modified version to outsource debayering, optional saturation change and
- * optional debayering to the GPU using cv::gpu (Lars Schillingmann)
+ * optional debayering to the GPU using OpenCV (Lars Schillingmann)
  */
 
  /**
@@ -127,7 +127,6 @@
 
 // yarp
 #include <yarp/os/Network.h>
-#include <yarp/os/Module.h>
 
 // iCub
 #include <iCub/CalibToolFactory.h>
@@ -151,7 +150,7 @@ int main(int argc, char *argv[]) {
     ResourceFinder rf;
     rf.setVerbose(true);
     rf.setDefaultConfigFile("camCalib.ini");    //overridden by --from parameter
-    rf.setDefaultContext("camCalib");           //overridden by --context parameter
+    rf.setDefaultContext("cameraCalibration");  //overridden by --context parameter
     rf.configure(argc, argv);
     CamCalibModule module;      
     return module.runModule(rf);

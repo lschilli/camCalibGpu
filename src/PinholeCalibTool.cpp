@@ -178,14 +178,14 @@ bool PinholeCalibTool::init(CvSize currImgSize, CvSize calibImgSize){
     /* init the undistortion matrices */
     cvInitUndistortMap( _intrinsic_matrix_scaled, _distortion_coeffs,
                         _mapUndistortX, _mapUndistortY);
-    gpuundistx.upload(_mapUndistortX);
-    gpuundisty.upload(_mapUndistortY);
-	
+    gpuundistx.upload(cv::cvarrToMat(static_cast<IplImage*>(_mapUndistortX)));
+    gpuundisty.upload(cv::cvarrToMat(static_cast<IplImage*>(_mapUndistortY)));
+
     _needInit = false;
     return true;
 }
 
-void PinholeCalibTool::apply(const Image& in, ImageOf<PixelRgb> & out){
+void PinholeCalibTool::apply(const yarp::sig::ImageOf<yarp::sig::PixelRgb> & in, ImageOf<PixelRgb> & out){
 
     CvSize inSize = cvSize(in.width(),in.height());
 
@@ -195,36 +195,67 @@ void PinholeCalibTool::apply(const Image& in, ImageOf<PixelRgb> & out){
         _needInit)
         init(inSize,_calibImgSize);
 
-    cv::Mat inmat((IplImage*)in.getIplImage(), false);
+    cv::Mat inmat(cv::cvarrToMat((IplImage*)in.getIplImage()/*, false*/));
 	
 	if (inmat.channels() == 1) {
 		gpuundisttmp.upload(inmat);
 	} else {
 		gpumatvec[0].upload(inmat);
-		cv::gpu::cvtColor(gpumatvec[0], gpuundisttmp, CV_BGR2GRAY);
+        #if CV_MAJOR_VERSION == 2
+            cv::gpu::cvtColor(gpumatvec[0], gpuundisttmp, CV_BGR2GRAY);
+        #elif CV_MAJOR_VERSION == 3
+            cv::cuda::cvtColor(gpumatvec[0], gpuundisttmp, CV_BGR2GRAY);
+        #endif
 	}
-    cv::gpu::demosaicing(gpuundisttmp, gpumatvec[0], cv::gpu::COLOR_BayerGB2BGR_MHT);
+    #if CV_MAJOR_VERSION == 2
+        cv::gpu::demosaicing(gpuundisttmp, gpumatvec[0], cv::gpu::COLOR_BayerGB2BGR_MHT);
+    #elif CV_MAJOR_VERSION == 3
+        cv::cuda::demosaicing(gpuundisttmp, gpumatvec[0], cv::cuda::COLOR_BayerGB2BGR_MHT);
+    #endif
 	if (outputWidth != 0 && outputHeight != 0) {
-		cv::gpu::remap(gpumatvec[0], gpumatvec[2], gpuundistx, gpuundisty, cv::INTER_LINEAR);
-		cv::gpu::resize(gpumatvec[2], gpumatvec[1], cv::Size(outputWidth, outputHeight));
+        #if CV_MAJOR_VERSION == 2
+            cv::gpu::remap(gpumatvec[0], gpumatvec[2], gpuundistx, gpuundisty, cv::INTER_LINEAR);
+            cv::gpu::resize(gpumatvec[2], gpumatvec[1], cv::Size(outputWidth, outputHeight));
+        #elif CV_MAJOR_VERSION == 3
+            cv::cuda::remap(gpumatvec[0], gpumatvec[2], gpuundistx, gpuundisty, cv::INTER_LINEAR);
+            cv::cuda::resize(gpumatvec[2], gpumatvec[1], cv::Size(outputWidth, outputHeight));
+        #endif
 	} else {
-		cv::gpu::remap(gpumatvec[0], gpumatvec[1], gpuundistx, gpuundisty, cv::INTER_LINEAR);
+        #if CV_MAJOR_VERSION == 2
+            cv::gpu::remap(gpumatvec[0], gpumatvec[1], gpuundistx, gpuundisty, cv::INTER_LINEAR);
+        #elif CV_MAJOR_VERSION == 3
+            cv::cuda::remap(gpumatvec[0], gpumatvec[1], gpuundistx, gpuundisty, cv::INTER_LINEAR);
+        #endif
 	}
 	if (currSat != 0) {
-		cv::gpu::cvtColor(gpumatvec[1], gpuundisttmp, CV_BGR2HSV);
-		cv::gpu::split(gpuundisttmp, gpumatvec);
-		cv::gpu::add(gpumatvec[1], currSat, gpumatvec[1]);
-		cv::gpu::merge(gpumatvec, gpuundisttmp);
-		cv::gpu::cvtColor(gpuundisttmp, gpumatvec[1], CV_HSV2BGR);
+        #if CV_MAJOR_VERSION == 2
+            cv::gpu::cvtColor(gpumatvec[1], gpuundisttmp, CV_BGR2HSV);
+            cv::gpu::split(gpuundisttmp, gpumatvec);
+            cv::gpu::add(gpumatvec[1], currSat, gpumatvec[1]);
+            cv::gpu::merge(gpumatvec, gpuundisttmp);
+            cv::gpu::cvtColor(gpuundisttmp, gpumatvec[1], CV_HSV2BGR);
+        #elif CV_MAJOR_VERSION == 3
+            cv::cuda::cvtColor(gpumatvec[1], gpuundisttmp, CV_BGR2HSV);
+            cv::cuda::split(gpuundisttmp, gpumatvec);
+            cv::cuda::add(gpumatvec[1], currSat, gpumatvec[1]);
+            cv::cuda::merge(gpumatvec, gpuundisttmp);
+            cv::cuda::cvtColor(gpuundisttmp, gpumatvec[1], CV_HSV2BGR);
+        #endif
 	}
 	int ind = 1;
 	if (sharpenVal != 0) {
-		cv::gpu::GaussianBlur(gpumatvec[1], gpumatvec[2], cv::Size(5, 5), 5);
-		cv::gpu::addWeighted(gpumatvec[1], 1.0 + sharpenVal, gpumatvec[2], -sharpenVal, 0, gpumatvec[2]);
+        #if CV_MAJOR_VERSION == 2
+            cv::gpu::GaussianBlur(gpumatvec[1], gpumatvec[2], cv::Size(5, 5), 5);
+            cv::gpu::addWeighted(gpumatvec[1], 1.0 + sharpenVal, gpumatvec[2], -sharpenVal, 0, gpumatvec[2]);
+        #elif CV_MAJOR_VERSION == 3
+            cv::Ptr<cv::cuda::Filter> gaussianBlurFilter = cv::cuda::createGaussianFilter(gpumatvec[1].type(), gpumatvec[2].type(), cv::Size(5, 5), 5);
+            gaussianBlurFilter->apply(gpumatvec[1], gpumatvec[2]);
+            cv::cuda::addWeighted(gpumatvec[1], 1.0 + sharpenVal, gpumatvec[2], -sharpenVal, 0, gpumatvec[2]);
+        #endif
 		ind = 2;
 	}
 	out.resize(gpumatvec[ind].size().width, gpumatvec[ind].size().height);
-	cv::Mat outmat((IplImage*)out.getIplImage(), false);
+	cv::Mat outmat(cv::cvarrToMat((IplImage*)out.getIplImage()/*, false*/));
 	gpumatvec[ind].download(outmat);
 
 //    cvRemap( in.getIplImage(), out.getIplImage(), _mapUndistortX, _mapUndistortY);
